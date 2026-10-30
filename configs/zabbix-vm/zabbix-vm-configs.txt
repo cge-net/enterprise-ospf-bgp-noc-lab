@@ -1,0 +1,38 @@
+sudo cat /etc/netplan/60-mgmt.yaml
+network:
+  version: 2
+  ethernets:
+    enp0s8:
+      addresses: [10.99.0.10/24]
+      routes:
+        - to: 10.0.0.0/8
+          via: 10.99.0.1
+
+sudo cat /etc/rsyslog.d/10-network.conf
+# Receive syslog from the lab routers on UDP 514
+module(load="imudp")
+input(type="imudp" port="514" ruleset="network")
+
+# One file per router (named by source IP) + one combined file
+template(name="PerHost" type="string" string="/var/log/network/%FROMHOST-IP%.log")
+
+ruleset(name="network") {
+    action(type="omfile" dynaFile="PerHost" fileCreateMode="0644")
+    action(type="omfile" file="/var/log/network/all.log" fileCreateMode="0644")
+}
+
+sudo grep -v '^#' /etc/snmp/snmptrapd.conf | grep -v '^$'
+authCommunity execute <SNMP_COMMUNITY>
+perl do "/usr/bin/zabbix_trap_receiver.pl";
+
+grep -E '^(allow|server|pool)' /etc/chrony/chrony.conf
+pool ntp.ubuntu.com        iburst maxsources 4
+pool 0.ubuntu.pool.ntp.org iburst maxsources 1
+pool 1.ubuntu.pool.ntp.org iburst maxsources 1
+pool 2.ubuntu.pool.ntp.org iburst maxsources 2
+allow 10.0.0.0/8
+
+grep -E '^(DBPassword|StartSNMPTrapper|SNMPTrapperFile)' /etc/zabbix/zabbix_server.conf
+DBPassword=<DB_PASSWORD>
+SNMPTrapperFile=/var/log/snmptrap/snmptrap.log
+StartSNMPTrapper=1

@@ -1,0 +1,36 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 94ab3b22fa1b4020a25f278526a48d02
+      template: 'Lab SNMP traps'
+      name: 'Lab SNMP traps'
+      groups:
+        - name: Templates
+      items:
+        - uuid: 42f6e75ddef34e6a8580f41974558df6
+          name: 'SNMP traps: link and BGP'
+          type: SNMP_TRAP
+          key: 'snmptrap["6\.3\.1\.1\.5\.|2\.1\.15\.7\."]'
+          delay: '0'
+          value_type: LOG
+          trends: '0'
+          triggers:
+            - uuid: 36d4bfb2f0fb465294ae41b2ab45a685
+              expression: 'find(/Lab SNMP traps/snmptrap["6\.3\.1\.1\.5\.|2\.1\.15\.7\."],,"like","2.1.15.7.2")=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Lab SNMP traps/snmptrap["6\.3\.1\.1\.5\.|2\.1\.15\.7\."],,"like","2.1.15.7.1")=1'
+              name: '{HOST.NAME}: BGP session dropped (trap)'
+              priority: AVERAGE
+              manual_close: 'YES'
+            - uuid: 3a5ff9c67cf1413cbb03dd2b75a215cd
+              expression: |
+                find(/Lab SNMP traps/snmptrap["6\.3\.1\.1\.5\.|2\.1\.15\.7\."],,"like","6.3.1.1.5.3")=1
+                and find(/Lab SNMP traps/snmptrap["6\.3\.1\.1\.5\.|2\.1\.15\.7\."],,"like","administratively down")=0
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Lab SNMP traps/snmptrap["6\.3\.1\.1\.5\.|2\.1\.15\.7\."],,"like","6.3.1.1.5.4")=1'
+              name: '{HOST.NAME}: link down (trap)'
+              priority: AVERAGE
+              manual_close: 'YES'

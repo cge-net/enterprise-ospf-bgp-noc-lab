@@ -1,0 +1,173 @@
+!
+! No configuration change since last restart
+!
+version 15.0
+service timestamps debug datetime msec
+service timestamps log datetime msec localtime show-timezone
+no service password-encryption
+!
+hostname BR-A
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+clock timezone PHT 8
+no ip icmp rate-limit unreachable
+!
+ip cef
+no ip domain-lookup
+!
+no ipv6 cef
+!
+!
+!
+!
+ip tcp synwait-time 5
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 10.255.0.6 255.255.255.255
+ ip ospf 1 area 1
+!
+interface Loopback1
+ ip address 10.1.2.1 255.255.255.0
+ ip ospf network point-to-point
+ ip ospf 1 area 1
+!
+interface Loopback2
+ ip address 10.1.3.1 255.255.255.0
+ ip ospf network point-to-point
+ ip ospf 1 area 1
+!
+interface Ethernet0/0
+ description TO_ABR-A
+ ip address 10.1.255.2 255.255.255.252
+ ip ospf network point-to-point
+ ip ospf 1 area 1
+!
+interface Ethernet0/1
+ description TO_PC-A
+ ip address 10.1.1.1 255.255.255.0
+ ip ospf 1 area 1
+!
+interface Ethernet0/2
+ no ip address
+ shutdown
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+interface Ethernet1/0
+ no ip address
+ shutdown
+!
+interface Ethernet1/1
+ no ip address
+ shutdown
+!
+interface Ethernet1/2
+ no ip address
+ shutdown
+!
+interface Ethernet1/3
+ no ip address
+ shutdown
+!
+interface Serial2/0
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial2/1
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial2/2
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial2/3
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/0
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/1
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/2
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/3
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+router ospf 1
+ router-id 10.255.0.6
+ passive-interface Ethernet0/1
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+!
+!
+ip access-list standard SNMP-ZABBIX
+ permit 10.99.0.10
+logging source-interface Loopback0
+logging 10.99.0.10
+!
+!
+!
+!
+snmp-server community <SNMP_COMMUNITY> RO SNMP-ZABBIX
+snmp-server ifindex persist
+snmp-server trap-source Loopback0
+snmp-server location Branch-A
+snmp-server contact cgenoc@lab.local
+snmp-server chassis-id
+snmp-server enable traps snmp linkdown linkup
+snmp-server enable traps bgp
+snmp-server host 10.99.0.10 version 2c <SNMP_COMMUNITY>
+snmp ifmib ifindex persist
+!
+!
+control-plane
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+ transport input all
+!
+ntp source Loopback0
+ntp server 10.99.0.10
+end
+

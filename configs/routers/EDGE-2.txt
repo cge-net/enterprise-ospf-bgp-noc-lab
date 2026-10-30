@@ -1,0 +1,191 @@
+!
+! No configuration change since last restart
+!
+version 15.0
+service timestamps debug datetime msec
+service timestamps log datetime msec localtime show-timezone
+no service password-encryption
+!
+hostname EDGE-2
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+clock timezone PHT 8
+no ip icmp rate-limit unreachable
+!
+ip cef
+no ip domain-lookup
+!
+no ipv6 cef
+!
+!
+!
+!
+ip tcp synwait-time 5
+!
+!
+!
+!
+!
+!
+interface Loopback0
+ ip address 10.255.0.2 255.255.255.255
+ ip ospf 1 area 0
+!
+interface Ethernet0/0
+ description TO_ISP-B
+ ip address 198.51.100.2 255.255.255.252
+ ip nat outside
+!
+interface Ethernet0/1
+ description TO_EDGE-1
+ ip address 10.0.0.2 255.255.255.252
+ ip nat inside
+ ip ospf network point-to-point
+ ip ospf 1 area 0
+!
+interface Ethernet0/2
+ description TO_HQ-CORE
+ ip address 10.0.0.9 255.255.255.252
+ ip nat inside
+ ip ospf network point-to-point
+ ip ospf 1 area 0
+!
+interface Ethernet0/3
+ no ip address
+ shutdown
+!
+interface Ethernet1/0
+ no ip address
+ shutdown
+!
+interface Ethernet1/1
+ no ip address
+ shutdown
+!
+interface Ethernet1/2
+ no ip address
+ shutdown
+!
+interface Ethernet1/3
+ no ip address
+ shutdown
+!
+interface Serial2/0
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial2/1
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial2/2
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial2/3
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/0
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/1
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/2
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+interface Serial3/3
+ no ip address
+ shutdown
+ serial restart-delay 0
+!
+router ospf 1
+ router-id 10.255.0.2
+ default-information originate
+!
+router bgp 65001
+ bgp router-id 10.255.0.2
+ bgp log-neighbor-changes
+ network 203.0.113.0
+ neighbor 10.255.0.1 remote-as 65001
+ neighbor 10.255.0.1 description EDGE-1
+ neighbor 10.255.0.1 update-source Loopback0
+ neighbor 10.255.0.1 next-hop-self
+ neighbor 198.51.100.1 remote-as 65020
+ neighbor 198.51.100.1 description ISP-B
+ neighbor 198.51.100.1 timers 5 15
+ neighbor 198.51.100.1 route-map TO-ISPB out
+!
+ip nat pool EDGE2-PAT 203.0.113.129 203.0.113.129 prefix-length 26
+ip nat inside source list NAT-INSIDE pool EDGE2-PAT overload
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+ip route 203.0.113.0 255.255.255.0 Null0
+!
+!
+!
+ip prefix-list OUR-PREFIX seq 5 permit 203.0.113.0/24
+!
+ip access-list standard NAT-INSIDE
+ permit 10.0.0.0 0.255.255.255
+ip access-list standard SNMP-ZABBIX
+ permit 10.99.0.10
+logging source-interface Loopback0
+logging 10.99.0.10
+!
+!
+!
+!
+route-map TO-ISPB permit 10
+ match ip address prefix-list OUR-PREFIX
+ set as-path prepend 65001 65001 65001
+!
+snmp-server community <SNMP_COMMUNITY> RO SNMP-ZABBIX
+snmp-server ifindex persist
+snmp-server trap-source Loopback0
+snmp-server location HQ
+snmp-server contact cgenoc@lab.local
+snmp-server chassis-id
+snmp-server enable traps snmp linkdown linkup
+snmp-server enable traps bgp
+snmp-server host 10.99.0.10 version 2c <SNMP_COMMUNITY>
+snmp ifmib ifindex persist
+!
+!
+control-plane
+!
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+ transport input all
+!
+ntp source Loopback0
+ntp server 10.99.0.10
+end
+
